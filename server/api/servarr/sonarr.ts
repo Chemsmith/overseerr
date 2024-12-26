@@ -197,6 +197,21 @@ class SonarrAPI extends ServarrBase<{
         );
 
         if (newSeriesResponse.data.id) {
+          const episodeIds = [];
+          for (const season of options.seasons) {
+            const episodes = await this.axios.get<EpisodeResult[]>(
+              `/episode?seriesId=${newSeriesResponse.data.id}&seasonNumber=${season}`
+            );
+            episodeIds.push(...episodes.data.map((episode) => episode.id));
+          }
+          await this.axios.put<EpisodeResult[]>(`/episode/monitor`, {
+            episodeIds: episodeIds,
+            monitored: true,
+          });
+          logger.debug('Sonarr monitor episode list', {
+            label: 'Sonarr',
+            episodeIds,
+          });
           logger.info('Updated existing series in Sonarr.', {
             label: 'Sonarr',
             seriesId: newSeriesResponse.data.id,
