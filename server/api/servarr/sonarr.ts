@@ -4,6 +4,7 @@ import ServarrBase from './base';
 export interface SonarrSeason {
   seasonNumber: number;
   monitored: boolean;
+  episodes?: EpisodeResult[];
   statistics?: {
     previousAiring?: string;
     episodeFileCount: number;
@@ -115,11 +116,27 @@ class SonarrAPI extends ServarrBase<{
     super({ url, apiKey, apiName: 'Sonarr', cacheName: 'sonarr' });
   }
 
-  public async getSeries(): Promise<SonarrSeries[]> {
+  public async getSeries(includeEpisodes = false): Promise<SonarrSeries[]> {
     try {
       const response = await this.axios.get<SonarrSeries[]>('/series');
 
-      return response.data;
+      const series = response.data;
+
+      if (includeEpisodes) {
+        for (const s of series) {
+          const episodes = await this.axios.get<EpisodeResult[]>(
+            `/episode?seriesId=${s.id}`
+          );
+
+          s.seasons.forEach((season) => {
+            season.episodes = episodes.data.filter(
+              (episode) => episode.seasonNumber === season.seasonNumber
+            );
+          });
+        }
+      }
+
+      return series;
     } catch (e) {
       throw new Error(`[Sonarr] Failed to retrieve series: ${e.message}`);
     }

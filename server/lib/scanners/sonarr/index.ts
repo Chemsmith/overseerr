@@ -66,7 +66,7 @@ class SonarrScanner
             url: SonarrAPI.buildUrl(server, '/api/v3'),
           });
 
-          this.items = await this.sonarrApi.getSeries();
+          this.items = await this.sonarrApi.getSeries(true);
 
           await this.loop(this.processSonarrSeries.bind(this), { sessionId });
         } else {
@@ -109,13 +109,20 @@ class SonarrScanner
 
       for (const season of filteredSeasons) {
         const totalAvailableEpisodes = season.statistics?.episodeFileCount ?? 0;
+        let episodesMonitored = true;
+        if (season.episodes) {
+          episodesMonitored = season.episodes.every((e) => e.monitored);
+        }
 
         processableSeasons.push({
           seasonNumber: season.seasonNumber,
           episodes: !server4k ? totalAvailableEpisodes : 0,
           episodes4k: server4k ? totalAvailableEpisodes : 0,
           totalEpisodes: season.statistics?.totalEpisodeCount ?? 0,
-          processing: season.monitored && totalAvailableEpisodes === 0,
+          processing:
+            season.monitored &&
+            episodesMonitored &&
+            totalAvailableEpisodes === 0,
           is4kOverride: server4k,
         });
       }

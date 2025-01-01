@@ -283,6 +283,9 @@ class BaseScanner<T> {
               ? MediaStatus.PARTIALLY_AVAILABLE
               : !season.is4kOverride && season.processing
               ? MediaStatus.PROCESSING
+              : existingSeason.status === MediaStatus.PROCESSING &&
+                !season.processing
+              ? MediaStatus.UNKNOWN
               : existingSeason.status;
 
           // Same thing here, except we only do updates if 4k is enabled
